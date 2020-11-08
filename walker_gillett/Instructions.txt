@@ -1,0 +1,1 @@
+Please make your own personal folder and only work on files within your folder. This will help avoid merging issues in git.
