@@ -1,0 +1,29 @@
+import pandas as pd
+import numpy as np
+
+url = "https://data.cityofchicago.org/Transportation/CTA-Ridership-Bus-Routes-Monthly-Day-Type-Averages/bynn-gwxy"
+fulldata = pd.read_csv("Monthly_Bus_Ridership.csv")
+fulldata.head()
+
+# cleaning--no NaN/Unknown values found
+fulldata["MonthTotal"].isnull().values.any()
+fulldata_null = fulldata[fulldata["MonthTotal"] == "Unknown"]
+fulldata_null
+fulldata['Month_Beginning'] = pd.to_datetime(fulldata["Month_Beginning"])
+
+# selecting data ranges
+df20 = fulldata[fulldata["Month_Beginning"] >= "2020-01-01"].sort_values(by = "Month_Beginning")
+#dfd19 = fulldata[fulldata["Month_Beginning"] >= "2019-01-01"].sort_values(by = "Month_Beginning")
+#df18 = fulldata[fulldata["Month_Beginning"] >= "2018-01-01"].sort_values(by = "Month_Beginning")
+
+copypt1 = fulldata[fulldata["Month_Beginning"] <= "2019-12-31"]
+copypt2 = fulldata[fulldata["Month_Beginning"] >= "2019-01-01"]
+df19 = copypt1[copypt1["Month_Beginning"].isin(copypt2["Month_Beginning"])]
+
+copypt3 = fulldata[fulldata["Month_Beginning"] >= "2018-01-01"]
+copypt4 = fulldata[fulldata["Month_Beginning"] <= "2018-12-31"]
+df18 = copypt3[copypt3["Month_Beginning"].isin(copypt4["Month_Beginning"])]
+
+copypt5 = fulldata[fulldata["Month_Beginning"] >= "2017-01-01"]
+copypt6 = fulldata[fulldata["Month_Beginning"] <= "2017-12-31"]
+df17 = copypt5[copypt5["Month_Beginning"].isin(copypt6["Month_Beginning"])]
