@@ -1,0 +1,93 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+The following code is from the website "https://www.r-spatial.org/r/2018/10/25/ggplot2-sf.html".
+
+```{r}
+library("ggplot2")
+theme_set(theme_bw())
+library("sf")
+```
+
+```{r}
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("rgeos")
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+```
+
+```{r}
+ggplot(data = world) +
+    geom_sf()
+```
+
+```{r}
+ggplot(data = world) +
+    geom_sf() +
+    xlab("Longitude") + ylab("Latitude") +
+    ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
+```
+
+The next bit of code is from the website "https://www.illinoistech.org/news/455137/Making-Interactive-Maps-of-Public-Data-in-R.htm".
+
+```{r}
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(viridis)
+```
+
+```{r}
+setwd("/Users/cjw/data_20_21/caleb_weis")
+
+# import geospatial data as a csv just in case I want 
+# that data
+zip_code_boundaries_csv <- read_csv("~/data_20_21/caleb_weis/Zip_Code_boundaries.csv")
+
+# import geospatial data as a shapefile
+zip_code_boundaries_sf <- read_sf("chicago_zip_code_boundaries")
+
+# import us zip codes data (with coordinates) to be 
+# merged with chicago covid (by zip code) data 
+chicago_zip_data <- read_csv("~/data_20_21/caleb_weis/uszips.csv") %>%
+  filter(city == "Chicago")
+
+# import and clean up covid data
+covid_by_zip_for_map <- read_csv("/Users/cjw/data_20_21/caleb_weis/COVID-19_Cases__Tests__and_Deaths_by_ZIP_Code_updated.csv") %>%
+  rename(zip = "ZIP Code") %>%
+  group_by(zip) %>%
+  rename(weekly_cases = "Cases - Weekly") %>%
+  rename(pop = "Population") %>%
+  rename(week = "Week Number") %>%
+  rename(test_num = "Tests - Weekly") %>%
+  filter(pop > 20000) %>%
+  mutate(pos_rate = weekly_cases / test_num) %>%
+  mutate(proportion = weekly_cases / pop)
+
+# merge covid data and zip code data
+covid_by_zip_for_map <- merge(covid_by_zip_for_map, chicago_zip_data, by = "zip")
+
+# ensure that merged data is recognized as geospatial data 
+# by setting certain columns as shapefile columns
+st_as_sf(covid_by_zip_for_map, coords = c("lat", "lng"), crs = 4326, agr = "aggregate")
+
+# clean up zip code shapefile (map) data
+zip_code_boundaries_sf <- zip_code_boundaries_sf %>%
+  st_transform(4326)
+```
+
+Just putting a break here because now I'm going to create the actual map.
+
+```{r}
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(data = zip_code_boundaries_sf, color = "red", 
+              weight = 1.5, opacity = 1, fillColor = "black", 
+              fillOpacity = 0.6, highlightOptions = 
+              highlightOptions(color = "yellow", weight = 2))
+```
+
