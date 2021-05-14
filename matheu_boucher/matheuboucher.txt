@@ -1,1 +1,8 @@
 Matheu Boucher
+
+Links (for COVID + Ridership maps)
+- https://towardsdatascience.com/geopandas-101-plot-any-data-with-a-latitude-and-longitude-on-a-map-98e01944b972
+- https://towardsdatascience.com/easy-steps-to-plot-geographic-data-on-a-map-python-11217859a2db
+- https://python.plainenglish.io/mapping-with-pythons-geopandas-2869bb758b08
+- https://github.com/Environmental-Research-Group/data_20_21/tree/master/QGIS_stuff
+- https://dlab.berkeley.edu/blog/adding-basemaps-python-contextily
