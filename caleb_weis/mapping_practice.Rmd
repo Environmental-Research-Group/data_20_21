@@ -7,6 +7,7 @@ The following code is from the website "https://www.r-spatial.org/r/2018/10/25/g
 
 ```{r}
 library("ggplot2")
+library("tidyverse")
 theme_set(theme_bw())
 library("sf")
 ```
@@ -32,7 +33,7 @@ ggplot(data = world) +
     ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
 ```
 
-The next bit of code is from the website "https://www.illinoistech.org/news/455137/Making-Interactive-Maps-of-Public-Data-in-R.htm".
+The next bit of code is from the website "https://www.illinoistech.org/news/455137/Making-Interactive-Maps-of-Public-Data-in-R.html".
 
 ```{r}
 library(tidyverse)
@@ -54,7 +55,7 @@ zip_code_boundaries_sf <- read_sf("chicago_zip_code_boundaries")
 # import us zip codes data (with coordinates) to be 
 # merged with chicago covid (by zip code) data 
 chicago_zip_data <- read_csv("~/data_20_21/caleb_weis/uszips.csv") %>%
-  filter(city == "Chicago")
+  filter(city == "Chicago" | zip == "60706")
 
 # import and clean up covid data
 covid_by_zip_for_map <- read_csv("/Users/cjw/data_20_21/caleb_weis/COVID-19_Cases__Tests__and_Deaths_by_ZIP_Code_updated.csv") %>%
@@ -66,7 +67,10 @@ covid_by_zip_for_map <- read_csv("/Users/cjw/data_20_21/caleb_weis/COVID-19_Case
   rename(test_num = "Tests - Weekly") %>%
   filter(pop > 20000) %>%
   mutate(pos_rate = weekly_cases / test_num) %>%
-  mutate(proportion = weekly_cases / pop)
+  mutate(proportion = weekly_cases / pop) %>%
+  mutate(proportion_pos = pos_rate / pop) %>%
+  mutate(avg_pos_rate = mean(pos_rate, na.rm = TRUE)) %>%
+  mutate(avg_proportion_pos = mean(proportion_pos, na.rm = TRUE))
 
 # merge covid data and zip code data
 covid_by_zip_for_map <- merge(covid_by_zip_for_map, chicago_zip_data, by = "zip")
@@ -78,16 +82,67 @@ st_as_sf(covid_by_zip_for_map, coords = c("lat", "lng"), crs = 4326, agr = "aggr
 # clean up zip code shapefile (map) data
 zip_code_boundaries_sf <- zip_code_boundaries_sf %>%
   st_transform(4326)
+
+# from https://www.learnatschoolschool.com/tutorials/how-to-plot-a-shapefile-map-in-r/
+
+zip_code_boundaries_df <- ggplot2::fortify(zip_code_boundaries_sf, region='NAME')
+
+# merge map data and covid data
+covid_by_zip_for_map_merged <- merge(covid_by_zip_for_map, zip_code_boundaries_sf, by = "zip")
+
+st_as_sf(covid_by_zip_for_map_merged)
 ```
+
+Second Attempt:
+
+```{r}
+ggplot(covid_by_zip_for_map_merged) +
+  geom_sf(size= 0.3, color = "red", mapping = aes(fill = avg_pos_rate, geometry = geometry)) +
+  scale_fill_gradient(low = "lavenderblush", high = "red4", na.value = "grey")
+?geometry
+```
+
+```{r}
+zip_code_boundaries_sf
+```
+
 
 Just putting a break here because now I'm going to create the actual map.
 
 ```{r}
 leaflet() %>%
   addTiles() %>%
-  addPolygons(data = zip_code_boundaries_sf, color = "red", 
-              weight = 1.5, opacity = 1, fillColor = "black", 
-              fillOpacity = 0.6, highlightOptions = 
-              highlightOptions(color = "yellow", weight = 2))
+  addPolygons(data = zip_code_boundaries_sf, color = "black", 
+              weight = 1.5, opacity = 1, fillColor = "red", 
+              fillOpacity = 0.5,
+              highlightOptions = 
+              highlightOptions(color = "yellow", weight = 2),
+              popup = ~zip) %>%
+  addCircleMarkers(data = covid_by_zip_for_map, fillColor = "yellow",
+             fillOpacity = as.numeric(covid_by_zip_for_map$avg_proportion_pos))
+  # addLayersControl(overlayGroups = character(pos_rate))
+
+function getColor(d) {
+    return d > 1000 ? '#800026' :
+           d > 500  ? '#BD0026' :
+           d > 200  ? '#E31A1C' :
+           d > 100  ? '#FC4E2A' :
+           d > 50   ? '#FD8D3C' :
+           d > 20   ? '#FEB24C' :
+           d > 10   ? '#FED976' :
+                      '#FFEDA0';
+}
+```
+
+```{r}
+chicago_zip_data
+```
+
+```{r}
+covid_by_zip_for_map
+```
+
+```{r}
+
 ```
 
