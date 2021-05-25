@@ -91,6 +91,13 @@ zip_code_boundaries_df <- ggplot2::fortify(zip_code_boundaries_sf, region='NAME'
 covid_by_zip_for_map_merged <- merge(covid_by_zip_for_map, zip_code_boundaries_sf, by = "zip")
 
 st_as_sf(covid_by_zip_for_map_merged)
+
+covid_by_zip_for_map_merged <- covid_by_zip_for_map_merged %>%
+  separate("ZIP Code Location", into = c("point", "lat", "long"), sep = " ") %>%
+  mutate(long = as.numeric(gsub("[()]", "", long)))
+
+covid_by_zip_for_map_merged
+
 ```
 
 Second Attempt:
@@ -101,6 +108,33 @@ ggplot(covid_by_zip_for_map_merged) +
   scale_fill_gradient(low = "lavenderblush", high = "red4", na.value = "grey")
 ?geometry
 ```
+
+```{r}
+library(lubridate)
+library(readr)
+library(tidyverse)
+CTA_System_Information_List_of_L_Stops <- read_csv("~/Downloads/CTA_-_System_Information_-_List_of__L__Stops.csv") %>%
+  rename(stationname = STATION_NAME)
+CTA_Ridership_L_Station_Entries_Daily_Totals <- read_csv("~/Downloads/CTA_-_Ridership_-__L__Station_Entries_-_Daily_Totals (1).csv")
+CTA_Ridership_L_Station_Entries_Daily_Totals
+stations_ridership <- merge(CTA_System_Information_List_of_L_Stops, CTA_Ridership_L_Station_Entries_Daily_Totals, by = "stationname")
+stations_ridership
+
+prepandemic <- stations_ridership %>%
+  filter(date == "01/01/2020")
+
+midpandemic <- stations_ridership %>%
+  filter(date == "01/01/2021")
+         
+rides_by_date <- merge(prepandemic, midpandemic, by = "stationname") %>%
+  mutate(difference = rides.x - rides.y) %>%
+  rename("ZIP Code Location" = "Location.y") %>%
+  separate("ZIP Code Location", into = c("long", "lat"), sep = ", ") %>%
+  mutate(long = as.numeric(gsub("[()]", "", long)))
+
+merge(rides_by_date, covid_by_zip_for_map_merged, by = "long")
+```
+
 
 ```{r}
 zip_code_boundaries_sf
